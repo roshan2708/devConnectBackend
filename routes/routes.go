@@ -59,6 +59,15 @@ func SetupRoutes() *mux.Router {
 		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.GetCurrentUser),
 		)).Methods("GET")
+	r.Handle("/posts",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.CreatePost),
+		)).Methods("POST")
+
+	r.Handle("/posts",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.GetPosts),
+		)).Methods("GET")
 
 	return r
 }
