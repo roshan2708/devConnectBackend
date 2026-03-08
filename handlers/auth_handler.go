@@ -40,6 +40,9 @@ func GoogleCallback(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Println("Insert error:", err)
 	}
+	session, _ := gothic.Store.Get(req, "devconnect-session")
+	session.Values["user_id"] = user.UserID
+	session.Save(req, res)
 
 	redirectURL := fmt.Sprintf("/?success=true&name=%s", user.Name)
 
