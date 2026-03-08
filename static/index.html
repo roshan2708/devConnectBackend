@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Auth | Premium Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --primary: #4285F4;
+            --primary-hover: #357ae8;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background: var(--bg-gradient);
+            margin: 0; 
+            overflow: hidden;
+        }
+
+        .card { 
+            background: var(--glass-bg); 
+            padding: 3rem; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); 
+            text-align: center; 
+            max-width: 420px; 
+            width: 90%; 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover { transform: translateY(-5px); }
+
+        .logo-area { margin-bottom: 1.5rem; color: var(--primary); }
+
+        h2 { color: var(--text-main); font-weight: 600; margin-bottom: 0.5rem; }
+        p { color: var(--text-muted); margin-bottom: 2rem; }
+
+        .btn-google { 
+            background: var(--primary); 
+            color: white; 
+            padding: 14px 28px; 
+            text-decoration: none; 
+            border-radius: 12px; 
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(66, 133, 244, 0.3);
+        }
+
+        .btn-google:hover { 
+            background: var(--primary-hover); 
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+            transform: scale(1.02);
+        }
+
+        .success-box { 
+            display: none; 
+            background: #ecfdf5; 
+            color: #059669; 
+            padding: 1rem; 
+            border-radius: 12px; 
+            margin-bottom: 1.5rem; 
+            border: 1px solid #10b981;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .user-avatar {
+            width: 80px; height: 80px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--primary);
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .logout-link { 
+            color: #ef4444; 
+            text-decoration: none; 
+            font-size: 0.9rem; 
+            margin-top: 2rem; 
+            display: inline-block;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .logout-link:hover { opacity: 1; text-decoration: underline; }
+
+        /* Animation Classes */
+        .fade-in { animation: fadeInDown 0.6s ease-out; }
+    </style>
+</head>
+<body>
+
+    <div class="card animate__animated animate__fadeInUp">
+        <div id="successMessage" class="success-box animate__animated animate__shakeX">
+            <i data-lucide="check-circle-2" style="vertical-align: middle; width: 18px;"></i> 
+            Login Successful!
+        </div>
+
+        <div id="loginView">
+            <div class="logo-area">
+                <i data-lucide="shield-check" stroke-width="1.5" size="48"></i>
+            </div>
+            <h2>Welcome Back</h2>
+            <p>Access your dashboard using Google Secure Auth.</p>
+            <a href="/auth/google" class="btn-google">
+                <i data-lucide="log-in" size="20"></i>
+                Sign in with Google
+            </a>
+        </div>
+
+        <div id="userView" style="display: none;">
+            <div class="user-avatar">
+                <i data-lucide="user" size="40"></i>
+            </div>
+            <h2 id="userName">Hello!</h2>
+            <p>You have successfully verified your identity.</p>
+            <a href="/logout/google" class="logout-link">
+                <i data-lucide="log-out" size="16" style="vertical-align: middle;"></i> Sign Out
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Handle Auth States
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('success')) {
+            const successBox = document.getElementById('successMessage');
+            const loginView = document.getElementById('loginView');
+            const userView = document.getElementById('userView');
+            
+            successBox.style.display = 'block';
+            loginView.style.display = 'none';
+            userView.style.display = 'block';
+            
+            const name = urlParams.get('name');
+            if (name) {
+                document.getElementById('userName').innerText = "Welcome, " + decodeURIComponent(name);
+            }
+        }
+    </script>
+</body>
+</html>
