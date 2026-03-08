@@ -28,7 +28,7 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	var user struct {
 		ID        string `json:"id"`
 		Name      string `json:"name"`
-		Email     string `jason:"email"`
+		Email     string `json:"email"`
 		AvatarURL string `json:"avatar_url"`
 	}
 	err = config.DB.QueryRow(query, userID).Scan(&user.ID, &user.Name, &user.Email, &user.AvatarURL)

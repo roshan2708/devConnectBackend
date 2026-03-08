@@ -2,6 +2,7 @@ package routes
 
 import (
 	"devConnect/handlers"
+	"devConnect/middleware"
 	"net/http"
 	"os"
 
@@ -16,10 +17,26 @@ func SetupRoutes() *mux.Router {
 
 	secret := os.Getenv("SESSION_SECRET")
 
+	// Create session store
 	store := sessions.NewCookieStore([]byte(secret))
+
+	// Important for Safari + OAuth
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 30,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteNoneMode,
+	}
 
 	gothic.Store = store
 
+	// Tell goth how to extract provider from URL
+	gothic.GetProviderName = func(req *http.Request) (string, error) {
+		return mux.Vars(req)["provider"], nil
+	}
+
+	// Configure Google OAuth
 	goth.UseProviders(
 		google.New(
 			os.Getenv("GOOGLE_KEY"),
@@ -30,12 +47,18 @@ func SetupRoutes() *mux.Router {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", homeHandler)
+	// Public routes
+	r.HandleFunc("/", homeHandler).Methods("GET")
 
-	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler)
+	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
 
-	r.HandleFunc("/auth/{provider}/callback", handlers.GoogleCallback)
-	r.HandleFunc("/me", handlers.GetCurrentUser).Methods("GET")
+	r.HandleFunc("/auth/{provider}/callback", handlers.GoogleCallback).Methods("GET")
+
+	// Protected routes
+	r.Handle("/me",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.GetCurrentUser),
+		)).Methods("GET")
 
 	return r
 }
