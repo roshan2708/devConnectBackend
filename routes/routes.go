@@ -96,6 +96,13 @@ func SetupRoutes() *mux.Router {
 
 	r.HandleFunc("/posts/{postID}/likes", handlers.GetLikes).Methods("GET")
 
+	r.Handle("/posts/{postID}/comment",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.CreateComment),
+		)).Methods("POST")
+
+	r.HandleFunc("/posts/{postID}/comments", handlers.GetComments).Methods("GET")
+
 	return r
 }
 

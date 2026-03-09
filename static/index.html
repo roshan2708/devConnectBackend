@@ -29,7 +29,7 @@ margin:0;
 background:white;
 padding:30px;
 border-radius:15px;
-width:750px;
+width:800px;
 }
 
 textarea,input{
@@ -43,10 +43,10 @@ border:1px solid #ddd;
 .btn{
 background:#4285F4;
 color:white;
-padding:10px 18px;
+padding:8px 16px;
 border:none;
 border-radius:6px;
-margin-top:10px;
+margin-top:8px;
 cursor:pointer;
 }
 
@@ -55,6 +55,13 @@ border:1px solid #ddd;
 padding:12px;
 margin-top:12px;
 border-radius:8px;
+}
+
+.comment-box{
+margin-top:10px;
+padding:8px;
+border-left:3px solid #4285F4;
+background:#f9f9f9;
 }
 
 hr{margin:25px 0;}
@@ -209,6 +216,33 @@ body:JSON.stringify({content})
 loadPosts();
 }
 
+function renderPost(post,container){
+
+container.innerHTML+=`
+<div class="post">
+
+<b>User:</b> ${post.user_id}
+
+<p>${post.content}</p>
+
+<button class="btn" onclick="likePost(${post.id})">👍 Like</button>
+
+<button class="btn" onclick="viewLikes(${post.id})">❤️ Likes</button>
+
+<button class="btn" onclick="loadComments(${post.id})">💬 Comments</button>
+
+<div id="likes-${post.id}"></div>
+
+<input id="comment-${post.id}" placeholder="Write comment">
+
+<button class="btn" onclick="addComment(${post.id})">Add Comment</button>
+
+<div id="comments-${post.id}"></div>
+
+</div>
+`;
+}
+
 async function loadPosts(){
 
 const res=await fetch("/posts");
@@ -217,22 +251,8 @@ const posts=await res.json();
 const container=document.getElementById("postsContainer");
 container.innerHTML="";
 
-posts.forEach(post=>{
+posts.forEach(post=>renderPost(post,container));
 
-container.innerHTML+=`
-<div class="post">
-<b>User:</b> ${post.user_id}
-<p>${post.content}</p>
-
-<button class="btn" onclick="likePost(${post.id})">Like</button>
-
-<button class="btn" onclick="viewLikes(${post.id})">View Likes</button>
-
-<div id="likes-${post.id}"></div>
-
-</div>
-`;
-});
 }
 
 async function loadFeed(){
@@ -243,21 +263,8 @@ const posts=await res.json();
 const container=document.getElementById("feedContainer");
 container.innerHTML="";
 
-posts.forEach(post=>{
-container.innerHTML+=`
-<div class="post">
-<b>${post.user_id}</b>
-<p>${post.content}</p>
+posts.forEach(post=>renderPost(post,container));
 
-<button class="btn" onclick="likePost(${post.id})">Like</button>
-
-<button class="btn" onclick="viewLikes(${post.id})">View Likes</button>
-
-<div id="likes-${post.id}"></div>
-
-</div>
-`;
-});
 }
 
 async function likePost(postID){
@@ -276,6 +283,44 @@ const users=await res.json();
 
 document.getElementById("likes-"+postID).innerHTML=
 "<b>Likes:</b><br>"+users.join("<br>");
+
+}
+
+async function addComment(postID){
+
+const content=document.getElementById("comment-"+postID).value;
+
+await fetch("/posts/"+postID+"/comment",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({content})
+});
+
+alert("Comment Added");
+
+loadComments(postID);
+
+}
+
+async function loadComments(postID){
+
+const res=await fetch("/posts/"+postID+"/comments");
+
+const comments=await res.json();
+
+const box=document.getElementById("comments-"+postID);
+
+box.innerHTML="";
+
+comments.forEach(c=>{
+box.innerHTML+=`
+<div class="comment-box">
+<b>${c.user_id}</b><br>
+${c.content}
+</div>
+`;
+});
+
 }
 
 async function followUser(){

@@ -1,0 +1,71 @@
+package handlers
+
+import (
+	"devConnect/config"
+	"encoding/json"
+	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/markbates/goth/gothic"
+)
+
+type CommentRequest struct {
+	Content string `json:"content"`
+}
+
+func CreateComment(w http.ResponseWriter, r *http.Request) {
+	session, _ := gothic.Store.Get(r, "devconnect-session")
+	userID := session.Values["user_id"].(string)
+	vars := mux.Vars(r)
+	postID := vars["postID"]
+	var body CommentRequest
+	json.NewDecoder(r.Body).Decode(&body)
+	query := `
+	INSERT INTO comments (post_id, user_id, content)
+	VALUES ($1,$2,$3)
+	`
+
+	_, err := config.DB.Exec(query, postID, userID, body.Content)
+
+	if err != nil {
+		http.Error(w, "Failed to add comment", http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte("Added comment sucessfully"))
+
+}
+
+func GetComments(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	postID := vars["postID"]
+
+	query := `
+	SELECT user_id, content, created_at
+	FROM comments
+	WHERE post_id=$1
+	ORDER BY created_at DESC
+	`
+
+	rows, err := config.DB.Query(query, postID)
+
+	if err != nil {
+		http.Error(w, "Failed to load comments", http.StatusInternalServerError)
+		return
+	}
+
+	defer rows.Close()
+	type Comment struct {
+		UserID    string `json:"user_id"`
+		Content   string `json:"content"`
+		CreatedAt string `json:"created_at"`
+	}
+	var comments []Comment
+
+	for rows.Next() {
+
+		var c Comment
+		rows.Scan(&c.UserID, &c.Content, &c.CreatedAt)
+		comments = append(comments, c)
+	}
+	json.NewEncoder(w).Encode(comments)
+}
