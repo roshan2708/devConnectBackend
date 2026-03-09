@@ -78,6 +78,11 @@ func SetupRoutes() *mux.Router {
 
 	r.HandleFunc("/following/{userID}", handlers.GetFollowing).Methods("GET")
 
+	r.Handle("/feed",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.GetFeed),
+		)).Methods("GET")
+
 	return r
 }
 
