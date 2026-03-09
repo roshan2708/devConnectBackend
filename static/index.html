@@ -7,17 +7,12 @@
 <title>DevConnect | API Test Dashboard</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
 
 :root{
 --primary:#4285F4;
---primary-hover:#357ae8;
 --bg-gradient:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
---glass-bg:rgba(255,255,255,0.95);
---text-main:#1f2937;
---text-muted:#6b7280;
 }
 
 body{
@@ -31,57 +26,38 @@ margin:0;
 }
 
 .card{
-background:var(--glass-bg);
-padding:3rem;
-border-radius:20px;
-box-shadow:0 20px 40px rgba(0,0,0,0.15);
-text-align:center;
-max-width:700px;
-width:90%;
-}
-
-.btn{
-background:#4285F4;
-color:white;
-padding:10px 20px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-margin-top:10px;
+background:white;
+padding:30px;
+border-radius:15px;
+width:750px;
 }
 
 textarea,input{
 width:100%;
 padding:10px;
+margin-top:8px;
 border-radius:8px;
 border:1px solid #ddd;
-margin-top:8px;
+}
+
+.btn{
+background:#4285F4;
+color:white;
+padding:10px 18px;
+border:none;
+border-radius:6px;
+margin-top:10px;
+cursor:pointer;
 }
 
 .post{
 border:1px solid #ddd;
-padding:10px;
+padding:12px;
+margin-top:12px;
 border-radius:8px;
-margin-top:10px;
-text-align:left;
-background:white;
-}
-
-.list-box{
-background:white;
-border:1px solid #ddd;
-border-radius:8px;
-padding:10px;
-margin-top:10px;
-text-align:left;
 }
 
 hr{margin:25px 0;}
-
-.logout{
-color:#ef4444;
-text-decoration:none;
-}
 
 </style>
 
@@ -94,10 +70,10 @@ text-decoration:none;
 <div id="loginView">
 
 <h2>DevConnect</h2>
-<p>Login with Google to test backend APIs</p>
+<p>Login with Google</p>
 
 <a href="/auth/google">
-<button class="btn">Login with Google</button>
+<button class="btn">Login</button>
 </a>
 
 </div>
@@ -106,42 +82,32 @@ text-decoration:none;
 
 <h2 id="userName">Welcome</h2>
 
-<a href="/logout/google" class="logout">Logout</a>
+<a href="/logout/google">Logout</a>
 
 <hr>
 
-<h3>My Profile (/me)</h3>
+<h3>My Profile</h3>
 
 <button class="btn" onclick="loadProfile()">Load Profile</button>
 
-<div id="profileBox" class="list-box"></div>
+<div id="profileBox"></div>
 
 <hr>
 
 <h3>Update Profile</h3>
 
 <input id="bio" placeholder="Bio">
-<input id="github" placeholder="GitHub URL">
-<input id="skills" placeholder="Skills (comma separated)">
+<input id="github" placeholder="GitHub">
+<input id="skills" placeholder="Skills">
 <input id="location" placeholder="Location">
 
 <button class="btn" onclick="updateProfile()">Update Profile</button>
 
 <hr>
 
-<h3>View Any User Profile</h3>
-
-<input id="viewUserID" placeholder="Enter user ID">
-
-<button class="btn" onclick="getUser()">Load User</button>
-
-<div id="userProfile" class="list-box"></div>
-
-<hr>
-
 <h3>Create Post</h3>
 
-<textarea id="postContent" rows="3" placeholder="Share something..."></textarea>
+<textarea id="postContent" rows="3"></textarea>
 
 <button class="btn" onclick="createPost()">Create Post</button>
 
@@ -149,23 +115,23 @@ text-decoration:none;
 
 <h3>All Posts</h3>
 
-<button class="btn" onclick="loadPosts()">Load All Posts</button>
+<button class="btn" onclick="loadPosts()">Load Posts</button>
 
 <div id="postsContainer"></div>
 
 <hr>
 
-<h3>Personalized Feed</h3>
+<h3>My Feed</h3>
 
-<button class="btn" onclick="loadFeed()">Load My Feed</button>
+<button class="btn" onclick="loadFeed()">Load Feed</button>
 
 <div id="feedContainer"></div>
 
 <hr>
 
-<h3>Follow Developer</h3>
+<h3>Follow User</h3>
 
-<input id="followUserID" placeholder="Enter user ID to follow">
+<input id="followUserID" placeholder="User ID">
 
 <button class="btn" onclick="followUser()">Follow</button>
 
@@ -177,7 +143,7 @@ text-decoration:none;
 
 <button class="btn" onclick="loadFollowers()">Load Followers</button>
 
-<div id="followersContainer" class="list-box"></div>
+<div id="followersContainer"></div>
 
 <hr>
 
@@ -187,7 +153,7 @@ text-decoration:none;
 
 <button class="btn" onclick="loadFollowing()">Load Following</button>
 
-<div id="followingContainer" class="list-box"></div>
+<div id="followingContainer"></div>
 
 </div>
 
@@ -200,22 +166,18 @@ const urlParams=new URLSearchParams(window.location.search);
 if(urlParams.has('success')){
 document.getElementById("loginView").style.display="none";
 document.getElementById("dashboard").style.display="block";
-
 loadProfile();
 }
 
 async function loadProfile(){
 
 const res=await fetch("/me");
-
 const user=await res.json();
 
 document.getElementById("userName").innerText="Welcome "+user.name;
 
 document.getElementById("profileBox").innerHTML=
-`<b>ID:</b> ${user.id}<br>
-<b>Email:</b> ${user.email}`;
-
+`ID: ${user.id}<br>Email: ${user.email}`;
 }
 
 async function updateProfile(){
@@ -225,49 +187,26 @@ const github=document.getElementById("github").value;
 const skills=document.getElementById("skills").value;
 const location=document.getElementById("location").value;
 
-const res=await fetch("/profile",{
+await fetch("/profile",{
 method:"PUT",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({bio,github,skills,location})
 });
 
-if(res.ok){
 alert("Profile Updated");
-}
-
-}
-
-async function getUser(){
-
-const id=document.getElementById("viewUserID").value;
-
-const res=await fetch("/users/"+id);
-
-const user=await res.json();
-
-document.getElementById("userProfile").innerHTML=
-`<b>Name:</b> ${user.name}<br>
-<b>Bio:</b> ${user.bio}<br>
-<b>Skills:</b> ${user.skills}<br>
-<b>GitHub:</b> ${user.github}`;
-
 }
 
 async function createPost(){
 
 const content=document.getElementById("postContent").value;
 
-const res=await fetch("/posts",{
+await fetch("/posts",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({content})
 });
 
-if(res.ok){
-alert("Post Created");
 loadPosts();
-}
-
 }
 
 async function loadPosts(){
@@ -279,13 +218,21 @@ const container=document.getElementById("postsContainer");
 container.innerHTML="";
 
 posts.forEach(post=>{
-container.innerHTML+=
-`<div class="post">
-<b>${post.user_id}</b>
-<p>${post.content}</p>
-</div>`;
-});
 
+container.innerHTML+=`
+<div class="post">
+<b>User:</b> ${post.user_id}
+<p>${post.content}</p>
+
+<button class="btn" onclick="likePost(${post.id})">Like</button>
+
+<button class="btn" onclick="viewLikes(${post.id})">View Likes</button>
+
+<div id="likes-${post.id}"></div>
+
+</div>
+`;
+});
 }
 
 async function loadFeed(){
@@ -297,13 +244,38 @@ const container=document.getElementById("feedContainer");
 container.innerHTML="";
 
 posts.forEach(post=>{
-container.innerHTML+=
-`<div class="post">
+container.innerHTML+=`
+<div class="post">
 <b>${post.user_id}</b>
 <p>${post.content}</p>
-</div>`;
-});
 
+<button class="btn" onclick="likePost(${post.id})">Like</button>
+
+<button class="btn" onclick="viewLikes(${post.id})">View Likes</button>
+
+<div id="likes-${post.id}"></div>
+
+</div>
+`;
+});
+}
+
+async function likePost(postID){
+
+await fetch("/posts/"+postID+"/like",{method:"POST"});
+
+alert("Post Liked");
+
+}
+
+async function viewLikes(postID){
+
+const res=await fetch("/posts/"+postID+"/likes");
+
+const users=await res.json();
+
+document.getElementById("likes-"+postID).innerHTML=
+"<b>Likes:</b><br>"+users.join("<br>");
 }
 
 async function followUser(){
