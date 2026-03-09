@@ -36,26 +36,18 @@ padding:3rem;
 border-radius:20px;
 box-shadow:0 20px 40px rgba(0,0,0,0.15);
 text-align:center;
-max-width:600px;
+max-width:700px;
 width:90%;
 }
 
-h2{color:var(--text-main);}
-p{color:var(--text-muted);}
-
 .btn{
-background:var(--primary);
+background:#4285F4;
 color:white;
 padding:10px 20px;
 border:none;
 border-radius:8px;
 cursor:pointer;
-font-weight:600;
 margin-top:10px;
-}
-
-.btn:hover{
-background:var(--primary-hover);
 }
 
 textarea,input{
@@ -64,24 +56,15 @@ padding:10px;
 border-radius:8px;
 border:1px solid #ddd;
 margin-top:8px;
-font-family:inherit;
 }
 
 .post{
-border:1px solid #e5e7eb;
+border:1px solid #ddd;
 padding:10px;
 border-radius:8px;
 margin-top:10px;
 text-align:left;
 background:white;
-}
-
-hr{margin:25px 0;}
-
-.logout{
-color:#ef4444;
-text-decoration:none;
-font-size:14px;
 }
 
 .list-box{
@@ -91,6 +74,13 @@ border-radius:8px;
 padding:10px;
 margin-top:10px;
 text-align:left;
+}
+
+hr{margin:25px 0;}
+
+.logout{
+color:#ef4444;
+text-decoration:none;
 }
 
 </style>
@@ -107,9 +97,7 @@ text-align:left;
 <p>Login with Google to test backend APIs</p>
 
 <a href="/auth/google">
-<button class="btn">
-<i data-lucide="log-in"></i> Login with Google
-</button>
+<button class="btn">Login with Google</button>
 </a>
 
 </div>
@@ -117,7 +105,37 @@ text-align:left;
 <div id="dashboard" style="display:none;">
 
 <h2 id="userName">Welcome</h2>
+
 <a href="/logout/google" class="logout">Logout</a>
+
+<hr>
+
+<h3>My Profile (/me)</h3>
+
+<button class="btn" onclick="loadProfile()">Load Profile</button>
+
+<div id="profileBox" class="list-box"></div>
+
+<hr>
+
+<h3>Update Profile</h3>
+
+<input id="bio" placeholder="Bio">
+<input id="github" placeholder="GitHub URL">
+<input id="skills" placeholder="Skills (comma separated)">
+<input id="location" placeholder="Location">
+
+<button class="btn" onclick="updateProfile()">Update Profile</button>
+
+<hr>
+
+<h3>View Any User Profile</h3>
+
+<input id="viewUserID" placeholder="Enter user ID">
+
+<button class="btn" onclick="getUser()">Load User</button>
+
+<div id="userProfile" class="list-box"></div>
 
 <hr>
 
@@ -129,11 +147,19 @@ text-align:left;
 
 <hr>
 
-<h3>Posts Feed</h3>
+<h3>All Posts</h3>
 
-<button class="btn" onclick="loadPosts()">Load Posts</button>
+<button class="btn" onclick="loadPosts()">Load All Posts</button>
 
 <div id="postsContainer"></div>
+
+<hr>
+
+<h3>Personalized Feed</h3>
+
+<button class="btn" onclick="loadFeed()">Load My Feed</button>
+
+<div id="feedContainer"></div>
 
 <hr>
 
@@ -169,19 +195,11 @@ text-align:left;
 
 <script>
 
-lucide.createIcons();
-
 const urlParams=new URLSearchParams(window.location.search);
 
 if(urlParams.has('success')){
 document.getElementById("loginView").style.display="none";
 document.getElementById("dashboard").style.display="block";
-
-const name=urlParams.get("name");
-
-if(name){
-document.getElementById("userName").innerText="Welcome, "+decodeURIComponent(name);
-}
 
 loadProfile();
 }
@@ -190,22 +208,54 @@ async function loadProfile(){
 
 const res=await fetch("/me");
 
-if(!res.ok) return;
+const user=await res.json();
+
+document.getElementById("userName").innerText="Welcome "+user.name;
+
+document.getElementById("profileBox").innerHTML=
+`<b>ID:</b> ${user.id}<br>
+<b>Email:</b> ${user.email}`;
+
+}
+
+async function updateProfile(){
+
+const bio=document.getElementById("bio").value;
+const github=document.getElementById("github").value;
+const skills=document.getElementById("skills").value;
+const location=document.getElementById("location").value;
+
+const res=await fetch("/profile",{
+method:"PUT",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({bio,github,skills,location})
+});
+
+if(res.ok){
+alert("Profile Updated");
+}
+
+}
+
+async function getUser(){
+
+const id=document.getElementById("viewUserID").value;
+
+const res=await fetch("/users/"+id);
 
 const user=await res.json();
 
-document.getElementById("userName").innerText="Welcome, "+user.name;
+document.getElementById("userProfile").innerHTML=
+`<b>Name:</b> ${user.name}<br>
+<b>Bio:</b> ${user.bio}<br>
+<b>Skills:</b> ${user.skills}<br>
+<b>GitHub:</b> ${user.github}`;
 
 }
 
 async function createPost(){
 
 const content=document.getElementById("postContent").value;
-
-if(!content){
-alert("Write something first");
-return;
-}
 
 const res=await fetch("/posts",{
 method:"POST",
@@ -214,8 +264,7 @@ body:JSON.stringify({content})
 });
 
 if(res.ok){
-alert("Post created!");
-document.getElementById("postContent").value="";
+alert("Post Created");
 loadPosts();
 }
 
@@ -227,22 +276,32 @@ const res=await fetch("/posts");
 const posts=await res.json();
 
 const container=document.getElementById("postsContainer");
-
 container.innerHTML="";
 
 posts.forEach(post=>{
-
-const div=document.createElement("div");
-div.className="post";
-
-div.innerHTML=`
-<b>User:</b> ${post.user_id}<br>
+container.innerHTML+=
+`<div class="post">
+<b>${post.user_id}</b>
 <p>${post.content}</p>
-<small>${post.created_at}</small>
-`;
+</div>`;
+});
 
-container.appendChild(div);
+}
 
+async function loadFeed(){
+
+const res=await fetch("/feed");
+const posts=await res.json();
+
+const container=document.getElementById("feedContainer");
+container.innerHTML="";
+
+posts.forEach(post=>{
+container.innerHTML+=
+`<div class="post">
+<b>${post.user_id}</b>
+<p>${post.content}</p>
+</div>`;
 });
 
 }
@@ -251,18 +310,9 @@ async function followUser(){
 
 const id=document.getElementById("followUserID").value;
 
-if(!id){
-alert("Enter user ID");
-return;
-}
+await fetch("/follow/"+id,{method:"POST"});
 
-const res=await fetch("/follow/"+id,{
-method:"POST"
-});
-
-if(res.ok){
-alert("Followed successfully!");
-}
+alert("Followed");
 
 }
 
@@ -274,9 +324,7 @@ const res=await fetch("/followers/"+id);
 
 const data=await res.json();
 
-const box=document.getElementById("followersContainer");
-
-box.innerHTML=data.map(u=>"<div>"+u+"</div>").join("");
+document.getElementById("followersContainer").innerHTML=data.join("<br>");
 
 }
 
@@ -288,9 +336,7 @@ const res=await fetch("/following/"+id);
 
 const data=await res.json();
 
-const box=document.getElementById("followingContainer");
-
-box.innerHTML=data.map(u=>"<div>"+u+"</div>").join("");
+document.getElementById("followingContainer").innerHTML=data.join("<br>");
 
 }
 
