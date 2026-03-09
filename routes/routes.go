@@ -69,6 +69,15 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.GetPosts),
 		)).Methods("GET")
 
+	r.Handle("/follow/{userID}",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.FollowUser),
+		)).Methods("POST")
+
+	r.HandleFunc("/followers/{userID}", handlers.GetFollowers).Methods("GET")
+
+	r.HandleFunc("/following/{userID}", handlers.GetFollowing).Methods("GET")
+
 	return r
 }
 
