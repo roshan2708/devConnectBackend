@@ -102,6 +102,10 @@ func SetupRoutes() *mux.Router {
 		)).Methods("POST")
 
 	r.HandleFunc("/posts/{postID}/comments", handlers.GetComments).Methods("GET")
+	r.Handle("/notifications",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.GetNotifications),
+		)).Methods("GET")
 
 	return r
 }

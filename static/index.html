@@ -29,7 +29,7 @@ margin:0;
 background:white;
 padding:30px;
 border-radius:15px;
-width:800px;
+width:820px;
 }
 
 textarea,input{
@@ -64,6 +64,14 @@ border-left:3px solid #4285F4;
 background:#f9f9f9;
 }
 
+.notification{
+border-left:4px solid #4285F4;
+background:#f2f6ff;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+}
+
 hr{margin:25px 0;}
 
 </style>
@@ -90,6 +98,14 @@ hr{margin:25px 0;}
 <h2 id="userName">Welcome</h2>
 
 <a href="/logout/google">Logout</a>
+
+<hr>
+
+<h3>Notifications 🔔</h3>
+
+<button class="btn" onclick="loadNotifications()">Load Notifications</button>
+
+<div id="notificationsBox"></div>
 
 <hr>
 
@@ -176,6 +192,26 @@ document.getElementById("dashboard").style.display="block";
 loadProfile();
 }
 
+async function loadNotifications(){
+
+const res=await fetch("/notifications");
+
+const notifications=await res.json();
+
+const box=document.getElementById("notificationsBox");
+
+box.innerHTML="";
+
+notifications.forEach(n=>{
+box.innerHTML+=`
+<div class="notification">
+<b>${n.type}</b><br>
+${n.message}
+</div>
+`;
+});
+}
+
 async function loadProfile(){
 
 const res=await fetch("/me");
@@ -252,7 +288,6 @@ const container=document.getElementById("postsContainer");
 container.innerHTML="";
 
 posts.forEach(post=>renderPost(post,container));
-
 }
 
 async function loadFeed(){
@@ -264,7 +299,6 @@ const container=document.getElementById("feedContainer");
 container.innerHTML="";
 
 posts.forEach(post=>renderPost(post,container));
-
 }
 
 async function likePost(postID){
@@ -272,7 +306,6 @@ async function likePost(postID){
 await fetch("/posts/"+postID+"/like",{method:"POST"});
 
 alert("Post Liked");
-
 }
 
 async function viewLikes(postID){
@@ -283,7 +316,6 @@ const users=await res.json();
 
 document.getElementById("likes-"+postID).innerHTML=
 "<b>Likes:</b><br>"+users.join("<br>");
-
 }
 
 async function addComment(postID){
@@ -296,10 +328,7 @@ headers:{"Content-Type":"application/json"},
 body:JSON.stringify({content})
 });
 
-alert("Comment Added");
-
 loadComments(postID);
-
 }
 
 async function loadComments(postID){
@@ -320,7 +349,6 @@ ${c.content}
 </div>
 `;
 });
-
 }
 
 async function followUser(){
@@ -330,7 +358,6 @@ const id=document.getElementById("followUserID").value;
 await fetch("/follow/"+id,{method:"POST"});
 
 alert("Followed");
-
 }
 
 async function loadFollowers(){
@@ -342,7 +369,6 @@ const res=await fetch("/followers/"+id);
 const data=await res.json();
 
 document.getElementById("followersContainer").innerHTML=data.join("<br>");
-
 }
 
 async function loadFollowing(){
@@ -354,7 +380,6 @@ const res=await fetch("/following/"+id);
 const data=await res.json();
 
 document.getElementById("followingContainer").innerHTML=data.join("<br>");
-
 }
 
 </script>

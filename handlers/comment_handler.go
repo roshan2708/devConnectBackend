@@ -14,12 +14,16 @@ type CommentRequest struct {
 }
 
 func CreateComment(w http.ResponseWriter, r *http.Request) {
+
 	session, _ := gothic.Store.Get(r, "devconnect-session")
 	userID := session.Values["user_id"].(string)
+
 	vars := mux.Vars(r)
 	postID := vars["postID"]
+
 	var body CommentRequest
 	json.NewDecoder(r.Body).Decode(&body)
+
 	query := `
 	INSERT INTO comments (post_id, user_id, content)
 	VALUES ($1,$2,$3)
@@ -31,8 +35,25 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to add comment", http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte("Added comment sucessfully"))
 
+	// Find post owner
+	var postOwner string
+
+	config.DB.QueryRow(`
+		SELECT user_id FROM posts WHERE id=$1
+	`, postID).Scan(&postOwner)
+
+	if postOwner != userID {
+
+		message := userID + " commented on your post"
+
+		config.DB.Exec(`
+		INSERT INTO notifications (user_id,type,message)
+		VALUES ($1,'comment',$2)
+		`, postOwner, message)
+	}
+
+	w.Write([]byte("Added comment successfully"))
 }
 
 func GetComments(w http.ResponseWriter, r *http.Request) {

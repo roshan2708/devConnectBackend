@@ -3,6 +3,7 @@ package handlers
 import (
 	"devConnect/config"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -27,6 +28,22 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Unable to follow", http.StatusInternalServerError)
 		return
+	}
+
+	// Create notification
+	notifQuery := `
+	INSERT INTO notifications (user_id, type, message)
+	VALUES ($1, $2, $3)
+	`
+
+	message := currentUser + " started following you"
+
+	_, err = config.DB.Exec(notifQuery, targetUser, "follow", message)
+
+	if err != nil {
+		// We don't break the request if notification fails
+		// Just log it
+		fmt.Println("Notification error:", err)
 	}
 
 	w.Write([]byte("Followed Successfully"))
