@@ -117,6 +117,11 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.EditPost),
 		)).Methods("PUT")
 
+	r.Handle("/posts/{postID}/like",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.UnlikePost),
+		)).Methods("DELETE")
+
 	return r
 
 }
