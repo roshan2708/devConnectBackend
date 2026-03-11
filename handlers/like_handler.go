@@ -79,3 +79,27 @@ func GetLikes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(likes)
 }
+
+func UnlikePost(w http.ResponseWriter, r *http.Request) {
+	session, _ := gothic.Store.Get(r, "devconnect-session")
+	userID := session.Values["user_id"].(string)
+	vars := mux.Vars(r)
+	postID := vars["postID"]
+	query := `
+	DELETE FROM likes
+	WHERE user_id=$1 AND post_id=$2
+	`
+
+	result, err := config.DB.Exec(query, userID, postID)
+
+	if err != nil {
+		http.Error(w, "Unable to unlike post", http.StatusInternalServerError)
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		http.Error(w, "Like not found", http.StatusNotFound)
+		return
+	}
+	w.Write([]byte("Unliked post sucessfully"))
+}
