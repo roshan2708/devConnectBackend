@@ -107,6 +107,11 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.GetNotifications),
 		)).Methods("GET")
 
+	r.Handle("/posts/{postID}",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.DeletePost),
+		)).Methods("DELETE")
+
 	return r
 }
 

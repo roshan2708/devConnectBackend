@@ -9,7 +9,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
-
 :root{
 --primary:#4285F4;
 --bg-gradient:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
@@ -48,6 +47,11 @@ border:none;
 border-radius:6px;
 margin-top:8px;
 cursor:pointer;
+margin-right:5px;
+}
+
+.delete-btn{
+background:#ef4444;
 }
 
 .post{
@@ -73,7 +77,6 @@ border-radius:6px;
 }
 
 hr{margin:25px 0;}
-
 </style>
 
 </head>
@@ -83,42 +86,33 @@ hr{margin:25px 0;}
 <div class="card">
 
 <div id="loginView">
-
 <h2>DevConnect</h2>
 <p>Login with Google</p>
-
 <a href="/auth/google">
 <button class="btn">Login</button>
 </a>
-
 </div>
 
 <div id="dashboard" style="display:none;">
 
 <h2 id="userName">Welcome</h2>
-
 <a href="/logout/google">Logout</a>
 
 <hr>
 
 <h3>Notifications 🔔</h3>
-
 <button class="btn" onclick="loadNotifications()">Load Notifications</button>
-
 <div id="notificationsBox"></div>
 
 <hr>
 
 <h3>My Profile</h3>
-
 <button class="btn" onclick="loadProfile()">Load Profile</button>
-
 <div id="profileBox"></div>
 
 <hr>
 
 <h3>Update Profile</h3>
-
 <input id="bio" placeholder="Bio">
 <input id="github" placeholder="GitHub">
 <input id="skills" placeholder="Skills">
@@ -129,57 +123,42 @@ hr{margin:25px 0;}
 <hr>
 
 <h3>Create Post</h3>
-
 <textarea id="postContent" rows="3"></textarea>
-
 <button class="btn" onclick="createPost()">Create Post</button>
 
 <hr>
 
 <h3>All Posts</h3>
-
 <button class="btn" onclick="loadPosts()">Load Posts</button>
-
 <div id="postsContainer"></div>
 
 <hr>
 
 <h3>My Feed</h3>
-
 <button class="btn" onclick="loadFeed()">Load Feed</button>
-
 <div id="feedContainer"></div>
 
 <hr>
 
 <h3>Follow User</h3>
-
 <input id="followUserID" placeholder="User ID">
-
 <button class="btn" onclick="followUser()">Follow</button>
 
 <hr>
 
 <h3>Followers</h3>
-
 <input id="followersUserID" placeholder="User ID">
-
 <button class="btn" onclick="loadFollowers()">Load Followers</button>
-
 <div id="followersContainer"></div>
 
 <hr>
 
 <h3>Following</h3>
-
 <input id="followingUserID" placeholder="User ID">
-
 <button class="btn" onclick="loadFollowing()">Load Following</button>
-
 <div id="followingContainer"></div>
 
 </div>
-
 </div>
 
 <script>
@@ -193,13 +172,9 @@ loadProfile();
 }
 
 async function loadNotifications(){
-
 const res=await fetch("/notifications");
-
 const notifications=await res.json();
-
 const box=document.getElementById("notificationsBox");
-
 box.innerHTML="";
 
 notifications.forEach(n=>{
@@ -213,12 +188,10 @@ ${n.message}
 }
 
 async function loadProfile(){
-
 const res=await fetch("/me");
 const user=await res.json();
 
 document.getElementById("userName").innerText="Welcome "+user.name;
-
 document.getElementById("profileBox").innerHTML=
 `ID: ${user.id}<br>Email: ${user.email}`;
 }
@@ -267,6 +240,8 @@ container.innerHTML+=`
 
 <button class="btn" onclick="loadComments(${post.id})">💬 Comments</button>
 
+<button class="btn delete-btn" onclick="deletePost(${post.id})">🗑 Delete</button>
+
 <div id="likes-${post.id}"></div>
 
 <input id="comment-${post.id}" placeholder="Write comment">
@@ -301,17 +276,32 @@ container.innerHTML="";
 posts.forEach(post=>renderPost(post,container));
 }
 
+async function deletePost(postID){
+
+const confirmDelete=confirm("Delete this post?");
+
+if(!confirmDelete) return;
+
+const res=await fetch("/posts/"+postID,{
+method:"DELETE"
+});
+
+if(res.ok){
+alert("Post deleted");
+loadPosts();
+loadFeed();
+}else{
+alert("Delete failed");
+}
+}
+
 async function likePost(postID){
-
 await fetch("/posts/"+postID+"/like",{method:"POST"});
-
 alert("Post Liked");
 }
 
 async function viewLikes(postID){
-
 const res=await fetch("/posts/"+postID+"/likes");
-
 const users=await res.json();
 
 document.getElementById("likes-"+postID).innerHTML=
@@ -334,11 +324,9 @@ loadComments(postID);
 async function loadComments(postID){
 
 const res=await fetch("/posts/"+postID+"/comments");
-
 const comments=await res.json();
 
 const box=document.getElementById("comments-"+postID);
-
 box.innerHTML="";
 
 comments.forEach(c=>{
@@ -356,7 +344,6 @@ async function followUser(){
 const id=document.getElementById("followUserID").value;
 
 await fetch("/follow/"+id,{method:"POST"});
-
 alert("Followed");
 }
 
@@ -365,7 +352,6 @@ async function loadFollowers(){
 const id=document.getElementById("followersUserID").value;
 
 const res=await fetch("/followers/"+id);
-
 const data=await res.json();
 
 document.getElementById("followersContainer").innerHTML=data.join("<br>");
@@ -376,7 +362,6 @@ async function loadFollowing(){
 const id=document.getElementById("followingUserID").value;
 
 const res=await fetch("/following/"+id);
-
 const data=await res.json();
 
 document.getElementById("followingContainer").innerHTML=data.join("<br>");
