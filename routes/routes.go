@@ -122,6 +122,11 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.UnlikePost),
 		)).Methods("DELETE")
 
+	r.Handle("/follow/{userID}",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.UnfollowUser),
+		)).Methods("DELETE")
+
 	return r
 
 }

@@ -118,3 +118,29 @@ func GetFollowing(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(following)
 }
+
+func UnfollowUser(w http.ResponseWriter, r *http.Request) {
+	session, _ := gothic.Store.Get(r, "devocnnect-session")
+	currentUser := session.Values["user_id"].(string)
+	vars := mux.Vars(r)
+
+	targetUser := vars["userID"]
+	query := `
+	DELETE FROM follows
+	WHERE follower_id=$1 AND following_id=$2
+	`
+
+	result, err := config.DB.Exec(query, currentUser, targetUser)
+
+	if err != nil {
+		http.Error(w, "Unable to unfloolw user", http.StatusInternalServerError)
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		http.Error(w, "Follow relationship not found", http.StatusNotFound)
+		return
+	}
+
+	w.Write([]byte("Unfollowed user sucessully"))
+}
