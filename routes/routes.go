@@ -112,7 +112,13 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.DeletePost),
 		)).Methods("DELETE")
 
+	r.Handle("/posts/{postID}",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.EditPost),
+		)).Methods("PUT")
+
 	return r
+
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {

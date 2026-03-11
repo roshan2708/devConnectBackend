@@ -91,3 +91,40 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Post delted sucessfully"))
 
 }
+
+type UpdatePostRequest struct {
+	Content string `json:"content"`
+}
+
+func EditPost(w http.ResponseWriter, r *http.Request) {
+	session, _ := gothic.Store.Get(r, "devconnect-session")
+	userID := session.Values["user_id"].(string)
+
+	vars := mux.Vars(r)
+	postID := vars["postID"]
+	var body UpdatePostRequest
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, "Invalid Request", http.StatusBadRequest)
+		return
+	}
+	query := `
+	UPDATE posts
+	SET content=$1
+	WHERE id=$2 AND user_id=$3
+	`
+
+	result, err := config.DB.Exec(query, body.Content, postID, userID)
+
+	if err != nil {
+		http.Error(w, "Failed to update the psot", http.StatusInternalServerError)
+		return
+	}
+	rows, _ := result.RowsAffected()
+
+	if rows == 0 {
+		http.Error(w, "Post not found or unauthorised", http.StatusForbidden)
+		return
+	}
+	w.Write([]byte("Psot updated sucessfully"))
+}
