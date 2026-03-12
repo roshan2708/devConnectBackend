@@ -159,3 +159,48 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(posts)
 }
+
+func GetTrendingPosts(w http.ResponseWriter, r *http.Request) {
+	query := `
+	SELECT 
+	posts.id,
+	posts.user_id,
+	posts.content,
+	posts.created_at,
+	COUNT(DISTINCT likes.id)*2 + COUNT(DISTINCT comments.id)*3 AS score
+	FROM posts
+	LEFT JOIN likes ON posts.id = likes.post_id
+	LEFT JOIN comments ON posts.id = comments.post_id
+	GROUP BY posts.id
+	ORDER BY score DESC
+	LIMIT 10
+	`
+
+	rows, err := config.DB.Query(query)
+
+	if err != nil {
+		http.Error(w, "Failed to get trending posts", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+	type Post struct {
+		ID        int    `json:"id"`
+		UserID    string `json:"user_id"`
+		Content   string `json:"content"`
+		CreatedAt string `json:"created_at"`
+		Score     int    `json:"score"`
+	}
+
+	var posts []Post
+
+	for rows.Next() {
+
+		var p Post
+
+		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt, &p.Score)
+
+		posts = append(posts, p)
+	}
+
+	json.NewEncoder(w).Encode(posts)
+}
