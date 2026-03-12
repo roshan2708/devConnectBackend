@@ -128,3 +128,34 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write([]byte("Psot updated sucessfully"))
 }
+func GetUserPosts(w http.ResponseWriter, r *http.Request) {
+	session, _ := gothic.Store.Get(r, "devconncect-session")
+	userID := session.Values["user_id"].(string)
+	query := `
+	SELECT id, user_id, content, created_at
+	FROM posts
+	WHERE user_id=$1
+	ORDER BY created_at DESC
+	`
+
+	rows, err := config.DB.Query(query, userID)
+	if err != nil {
+		http.Error(w, "Failed to get psots", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+	type Post struct {
+		ID        int    `json:"id"`
+		UserID    string `json:"user_id"`
+		Content   string `json:"content"`
+		CreatedAt string `json:"created_at"`
+	}
+	var posts []Post
+	for rows.Next() {
+		var p Post
+		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt)
+		posts = append(posts, p)
+
+	}
+	json.NewEncoder(w).Encode(posts)
+}

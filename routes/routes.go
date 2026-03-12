@@ -137,6 +137,8 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.MarkNotificationRead),
 		)).Methods("PUT")
 
+	r.HandleFunc("/users/{userID}/posts", handlers.GetUserPosts).Methods("GET")
+
 	return r
 
 }
