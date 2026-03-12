@@ -90,3 +90,30 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(comments)
 }
+
+func DeleteComment(w http.ResponseWriter, r *http.Request) {
+	session, _ := gothic.Store.Get(r, "devconnect-session")
+	userID := session.Values["user_id"].(string)
+
+	vars := mux.Vars(r)
+
+	commentID := vars["commentID"]
+	query := `
+	DELETE FROM comments
+	WHERE id=$1 AND user_id=$2
+	`
+
+	result, err := config.DB.Exec(query, commentID, userID)
+
+	if err != nil {
+		http.Error(w, "Unable to delete comment", http.StatusInternalServerError)
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		http.Error(w, "Comment not found or unauthorised", http.StatusForbidden)
+		return
+	}
+
+	w.Write([]byte("Comment deleted sucessfully"))
+}

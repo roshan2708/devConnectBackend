@@ -127,6 +127,11 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.UnfollowUser),
 		)).Methods("DELETE")
 
+	r.Handle("/comments/{commentID}",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.DeleteComment),
+		)).Methods("DELETE")
+
 	return r
 
 }
