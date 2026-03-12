@@ -138,6 +138,7 @@ func SetupRoutes() *mux.Router {
 		)).Methods("PUT")
 
 	r.HandleFunc("/users/{userID}/posts", handlers.GetUserPosts).Methods("GET")
+	r.HandleFunc("/search", handlers.SearchUsers).Methods("GET")
 
 	return r
 
