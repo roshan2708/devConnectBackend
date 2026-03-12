@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/markbates/goth/gothic"
 )
 
@@ -40,4 +41,31 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
 
 	}
 	json.NewEncoder(w).Encode(notifications)
+}
+func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
+	session, _ := gothic.Store.Get(r, "devconnect-session")
+	userID := session.Values["user_id"].(string)
+
+	vars := mux.Vars(r)
+	notificationID := vars["id"]
+	query := `
+	UPDATE notifications
+	SET read = true
+	WHERE id=$1 AND user_id=$2
+	`
+
+	result, err := config.DB.Exec(query, notificationID, userID)
+
+	if err != nil {
+		http.Error(w, "Unable to read notifications", http.StatusInternalServerError)
+		return
+	}
+	rows, _ := result.RowsAffected()
+
+	if rows == 0 {
+		http.Error(w, "Notifiction not found", http.StatusForbidden)
+		return
+	}
+
+	w.Write([]byte("Marked notification as read"))
 }

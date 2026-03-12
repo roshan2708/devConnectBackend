@@ -132,6 +132,11 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.DeleteComment),
 		)).Methods("DELETE")
 
+	r.Handle("/notifications/{id}/read",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.MarkNotificationRead),
+		)).Methods("PUT")
+
 	return r
 
 }
