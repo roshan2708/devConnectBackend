@@ -3,6 +3,7 @@ package handlers
 import (
 	"devConnect/config"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -38,12 +39,28 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPosts(w http.ResponseWriter, r *http.Request) {
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+	page := 1
+	limit := 10
+	if pageStr != "" {
+
+		fmt.Sscanf(pageStr, "%d", &page)
+	}
+	if limitStr != "" {
+
+		fmt.Sscanf(limitStr, "%d", limit)
+	}
+
+	offset := (page - 1) * limit
 	query := `
-SELECT id,user_id,content,created_at
-FROM posts
-ORDER BY created_at DESC
-`
-	rows, err := config.DB.Query(query)
+	SELECT id,user_id,content,created_at
+	FROM posts
+	ORDER BY created_at DESC
+	LIMIT $1 OFFSET $2
+	`
+
+	rows, err := config.DB.Query(query, limit, offset)
 	if err != nil {
 		http.Error(w, "Failed to load posts", http.StatusInternalServerError)
 		return
@@ -129,8 +146,10 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Psot updated sucessfully"))
 }
 func GetUserPosts(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconncect-session")
-	userID := session.Values["user_id"].(string)
+
+	vars := mux.Vars(r)
+	userID := vars["userID"]
+
 	query := `
 	SELECT id, user_id, content, created_at
 	FROM posts
@@ -139,24 +158,32 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 	`
 
 	rows, err := config.DB.Query(query, userID)
+
 	if err != nil {
-		http.Error(w, "Failed to get psots", http.StatusInternalServerError)
+		http.Error(w, "Failed to fetch user posts", http.StatusInternalServerError)
 		return
 	}
+
 	defer rows.Close()
+
 	type Post struct {
 		ID        int    `json:"id"`
 		UserID    string `json:"user_id"`
 		Content   string `json:"content"`
 		CreatedAt string `json:"created_at"`
 	}
-	var posts []Post
-	for rows.Next() {
-		var p Post
-		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt)
-		posts = append(posts, p)
 
+	var posts []Post
+
+	for rows.Next() {
+
+		var p Post
+
+		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt)
+
+		posts = append(posts, p)
 	}
+
 	json.NewEncoder(w).Encode(posts)
 }
 

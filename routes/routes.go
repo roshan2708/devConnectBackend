@@ -46,6 +46,7 @@ func SetupRoutes() *mux.Router {
 	)
 
 	r := mux.NewRouter()
+	r.Use(middleware.RateLimiter)
 
 	// Public routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
@@ -53,6 +54,7 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
 
 	r.HandleFunc("/auth/{provider}/callback", handlers.GoogleCallback).Methods("GET")
+	r.HandleFunc("/health", handlers.HealthCheck).Methods("GET")
 
 	// Protected routes
 	r.Handle("/me",
