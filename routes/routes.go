@@ -41,7 +41,7 @@ func SetupRoutes() *mux.Router {
 		google.New(
 			os.Getenv("GOOGLE_KEY"),
 			os.Getenv("GOOGLE_SECRET"),
-			"http://localhost:3000/auth/google/callback",
+			"https://devconnectbackend-wuej.onrender.com/auth/google/callback",
 		),
 	)
 
