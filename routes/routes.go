@@ -148,5 +148,6 @@ func SetupRoutes() *mux.Router {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "static/index.html")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("DevConnect API running SHER"))
 }
