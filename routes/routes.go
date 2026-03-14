@@ -51,7 +51,7 @@ func SetupRoutes() *mux.Router {
 	// Public routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
 
-	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
+	r.HandleFunc("/auth/{provider}", handlers.BeginGoogleAuth).Methods("GET")
 
 	r.HandleFunc("/auth/{provider}/callback", handlers.GoogleCallback).Methods("GET")
 	r.HandleFunc("/health", handlers.HealthCheck).Methods("GET")

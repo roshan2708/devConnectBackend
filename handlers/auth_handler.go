@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"devConnect/config"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -29,7 +28,8 @@ func GoogleCallback(res http.ResponseWriter, req *http.Request) {
 	last_login=EXCLUDED.last_login;
 	`
 
-	_, err = config.DB.Exec(query,
+	_, err = config.DB.Exec(
+		query,
 		user.UserID,
 		user.Name,
 		user.Email,
@@ -40,11 +40,20 @@ func GoogleCallback(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Println("Insert error:", err)
 	}
+
 	session, _ := gothic.Store.Get(req, "devconnect-session")
+
+	// Save logged-in user
 	session.Values["user_id"] = user.UserID
+
+	// Get redirect destination
+	redirect, ok := session.Values["redirect"].(string)
+
+	if !ok || redirect == "" {
+		redirect = "/"
+	}
+
 	session.Save(req, res)
 
-	redirectURL := fmt.Sprintf("/?success=true&name=%s", user.Name)
-
-	http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(res, req, redirect, http.StatusTemporaryRedirect)
 }
