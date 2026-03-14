@@ -25,7 +25,7 @@ func SetupRoutes() *mux.Router {
 		Path:     "/",
 		MaxAge:   86400 * 30,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 	}
 
