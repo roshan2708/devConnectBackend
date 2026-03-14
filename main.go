@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"devConnect/config"
 	"devConnect/routes"
@@ -20,6 +21,14 @@ func main() {
 	// Setup router
 	r := routes.SetupRoutes()
 
-	fmt.Println("Server running on http://localhost:3000")
-	log.Fatal(http.ListenAndServe(":3000", r))
+	// Get Render port
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "3000"
+	}
+
+	fmt.Println("Server running on port", port)
+
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
