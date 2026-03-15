@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/markbates/goth/gothic"
 )
@@ -14,7 +15,11 @@ func BeginGoogleAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Default redirect
 	if redirect == "" {
-		redirect = "http://localhost:8000/dashboard.html"
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "http://localhost:8000"
+		}
+		redirect = frontendURL + "/dashboard.html"
 	}
 
 	session.Values["redirect"] = redirect

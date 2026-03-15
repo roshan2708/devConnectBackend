@@ -4,6 +4,7 @@ import (
 	"devConnect/config"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/markbates/goth/gothic"
@@ -50,7 +51,11 @@ func GoogleCallback(res http.ResponseWriter, req *http.Request) {
 	redirect, ok := session.Values["redirect"].(string)
 
 	if !ok || redirect == "" {
-		redirect = "http://localhost:8000/dashboard.html"
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "http://localhost:8000"
+		}
+		redirect = frontendURL + "/dashboard.html"
 	}
 
 	session.Save(req, res)
