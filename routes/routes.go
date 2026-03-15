@@ -165,6 +165,18 @@ func SetupRoutes() http.Handler {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
+
+	session, _ := gothic.Store.Get(r, "devconnect-session")
+
+	userID := session.Values["user_id"]
+
+	// If user logged in → redirect to dashboard
+	if userID != nil {
+		http.Redirect(w, r, "http://localhost:8000/dashboard.html", http.StatusTemporaryRedirect)
+		return
+	}
+
+	// Otherwise show API status
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("DevConnect API running SHER"))
 }
