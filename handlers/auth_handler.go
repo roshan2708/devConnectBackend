@@ -50,7 +50,7 @@ func GoogleCallback(res http.ResponseWriter, req *http.Request) {
 	redirect, ok := session.Values["redirect"].(string)
 
 	if !ok || redirect == "" {
-		redirect = "/"
+		redirect = "http://localhost:8000/dashboard.html"
 	}
 
 	session.Save(req, res)

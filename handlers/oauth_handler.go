@@ -12,10 +12,13 @@ func BeginGoogleAuth(w http.ResponseWriter, r *http.Request) {
 
 	redirect := r.URL.Query().Get("redirect")
 
-	if redirect != "" {
-		session.Values["redirect"] = redirect
-		session.Save(r, w)
+	// Default redirect
+	if redirect == "" {
+		redirect = "http://localhost:8000/dashboard.html"
 	}
+
+	session.Values["redirect"] = redirect
+	session.Save(r, w)
 
 	gothic.BeginAuthHandler(w, r)
 }
