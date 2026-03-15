@@ -151,7 +151,10 @@ func SetupRoutes() http.Handler {
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
 			"http://localhost:8000",
+			"https://eaf9f920-41bd-46cc-87f0-5d0368dc54d1.lovableproject.com",
+			"https://id-preview--eaf9f920-41bd-46cc-87f0-5d0368dc54d1.lovable.app",
 		},
+
 		AllowedMethods: []string{
 			"GET", "POST", "PUT", "DELETE", "OPTIONS",
 		},
