@@ -11,22 +11,23 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/google"
+	"github.com/rs/cors"
 )
 
-func SetupRoutes() *mux.Router {
+func SetupRoutes() http.Handler {
 
 	secret := os.Getenv("SESSION_SECRET")
 
 	// Create session store
 	store := sessions.NewCookieStore([]byte(secret))
 
-	// Important for Safari + OAuth
+	// Cookie settings (for localhost testing)
 	store.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 30,
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		Secure:   false, // IMPORTANT for localhost testing
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	gothic.Store = store
@@ -48,19 +49,22 @@ func SetupRoutes() *mux.Router {
 	r := mux.NewRouter()
 	r.Use(middleware.RateLimiter)
 
-	// Public routes
+	// ---------------- PUBLIC ROUTES ----------------
+
 	r.HandleFunc("/", homeHandler).Methods("GET")
 
 	r.HandleFunc("/auth/{provider}", handlers.BeginGoogleAuth).Methods("GET")
-
 	r.HandleFunc("/auth/{provider}/callback", handlers.GoogleCallback).Methods("GET")
+
 	r.HandleFunc("/health", handlers.HealthCheck).Methods("GET")
 
-	// Protected routes
+	// ---------------- PROTECTED ROUTES ----------------
+
 	r.Handle("/me",
 		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.GetCurrentUser),
 		)).Methods("GET")
+
 	r.Handle("/posts",
 		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.CreatePost),
@@ -76,38 +80,30 @@ func SetupRoutes() *mux.Router {
 			http.HandlerFunc(handlers.FollowUser),
 		)).Methods("POST")
 
-	r.HandleFunc("/followers/{userID}", handlers.GetFollowers).Methods("GET")
-
-	r.HandleFunc("/following/{userID}", handlers.GetFollowing).Methods("GET")
+	r.Handle("/follow/{userID}",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.UnfollowUser),
+		)).Methods("DELETE")
 
 	r.Handle("/feed",
 		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.GetFeed),
 		)).Methods("GET")
+
 	r.Handle("/profile",
 		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.UpdateProfile),
 		)).Methods("PUT")
 
-	r.HandleFunc("/users/{userID}", handlers.GetUserProfile).Methods("GET")
-
-	r.Handle("/posts/{postID}/like",
-		middleware.AuthMiddleware(
-			http.HandlerFunc(handlers.LikePost),
-		)).Methods("POST")
-
-	r.HandleFunc("/posts/{postID}/likes", handlers.GetLikes).Methods("GET")
-
-	r.Handle("/posts/{postID}/comment",
-		middleware.AuthMiddleware(
-			http.HandlerFunc(handlers.CreateComment),
-		)).Methods("POST")
-
-	r.HandleFunc("/posts/{postID}/comments", handlers.GetComments).Methods("GET")
 	r.Handle("/notifications",
 		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.GetNotifications),
 		)).Methods("GET")
+
+	r.Handle("/notifications/{id}/read",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.MarkNotificationRead),
+		)).Methods("PUT")
 
 	r.Handle("/posts/{postID}",
 		middleware.AuthMiddleware(
@@ -121,30 +117,51 @@ func SetupRoutes() *mux.Router {
 
 	r.Handle("/posts/{postID}/like",
 		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.LikePost),
+		)).Methods("POST")
+
+	r.Handle("/posts/{postID}/like",
+		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.UnlikePost),
 		)).Methods("DELETE")
 
-	r.Handle("/follow/{userID}",
+	r.Handle("/posts/{postID}/comment",
 		middleware.AuthMiddleware(
-			http.HandlerFunc(handlers.UnfollowUser),
-		)).Methods("DELETE")
+			http.HandlerFunc(handlers.CreateComment),
+		)).Methods("POST")
 
 	r.Handle("/comments/{commentID}",
 		middleware.AuthMiddleware(
 			http.HandlerFunc(handlers.DeleteComment),
 		)).Methods("DELETE")
 
-	r.Handle("/notifications/{id}/read",
-		middleware.AuthMiddleware(
-			http.HandlerFunc(handlers.MarkNotificationRead),
-		)).Methods("PUT")
+	// ---------------- PUBLIC DATA ROUTES ----------------
 
+	r.HandleFunc("/followers/{userID}", handlers.GetFollowers).Methods("GET")
+	r.HandleFunc("/following/{userID}", handlers.GetFollowing).Methods("GET")
+	r.HandleFunc("/posts/{postID}/likes", handlers.GetLikes).Methods("GET")
+	r.HandleFunc("/posts/{postID}/comments", handlers.GetComments).Methods("GET")
+	r.HandleFunc("/users/{userID}", handlers.GetUserProfile).Methods("GET")
 	r.HandleFunc("/users/{userID}/posts", handlers.GetUserPosts).Methods("GET")
 	r.HandleFunc("/search", handlers.SearchUsers).Methods("GET")
 	r.HandleFunc("/trending", handlers.GetTrendingPosts).Methods("GET")
 
-	return r
+	// ---------------- CORS CONFIG ----------------
 
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{
+			"http://localhost:8000",
+		},
+		AllowedMethods: []string{
+			"GET", "POST", "PUT", "DELETE", "OPTIONS",
+		},
+		AllowedHeaders: []string{
+			"Content-Type", "Authorization",
+		},
+		AllowCredentials: true,
+	})
+
+	return c.Handler(r)
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
