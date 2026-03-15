@@ -26,8 +26,8 @@ func SetupRoutes() http.Handler {
 		Path:     "/",
 		MaxAge:   86400 * 30,
 		HttpOnly: true,
-		Secure:   false, // IMPORTANT for localhost testing
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true, // IMPORTANT for localhost testing
+		SameSite: http.SameSiteNoneMode,
 	}
 
 	gothic.Store = store
