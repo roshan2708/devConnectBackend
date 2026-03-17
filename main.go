@@ -29,6 +29,7 @@ func main() {
 	}
 
 	fmt.Println("Server running on port", port)
+	fmt.Println("http://localhost:3000")
 
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
