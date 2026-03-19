@@ -26,7 +26,7 @@ func SetupRoutes() *mux.Router {
 		MaxAge:   86400 * 30,
 		HttpOnly: true,
 		Secure:   false,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	gothic.Store = store
