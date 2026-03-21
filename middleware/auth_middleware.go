@@ -1,31 +1,49 @@
 package middleware
 
 import (
+	"context"
+	"devConnect/utils"
 	"net/http"
-
-	"github.com/markbates/goth/gothic"
+	"strings"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "user_id"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check for X-User-ID header first (for mobile apps)
+		// 1. Check for X-User-ID header (legacy/mobile support)
 		userID := r.Header.Get("X-User-ID")
 		if userID != "" {
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-		session, err := gothic.Store.Get(r, "devconnect-session")
-		if err != nil {
-			http.Error(w, "Session-error", http.StatusInternalServerError)
-			return
+		// 2. Check for Bearer Token in Authorization header
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString := parts[1]
+				validUserID, err := utils.ValidateToken(tokenString)
+				if err == nil {
+					ctx := context.WithValue(r.Context(), UserIDKey, validUserID)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+			}
 		}
-		sessionUserID, ok := session.Values["user_id"].(string)
-		if !ok || sessionUserID == "" {
-			http.Error(w, "Unauthorised", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
 
+		http.Error(w, "Unauthorised", http.StatusUnauthorized)
 	})
+}
+
+func GetUserID(r *http.Request) string {
+	userID, ok := r.Context().Value(UserIDKey).(string)
+	if !ok {
+		return ""
+	}
+	return userID
 }

@@ -2,27 +2,16 @@ package handlers
 
 import (
 	"devConnect/config"
+	"devConnect/middleware"
 	"encoding/json"
 	"net/http"
-
-	"github.com/markbates/goth/gothic"
 )
 
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	// Check for X-User-ID header first (for mobile apps)
-	userID := r.Header.Get("X-User-ID")
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		session, err := gothic.Store.Get(r, "devconnect-session")
-		if err != nil {
-			http.Error(w, "Session error", http.StatusInternalServerError)
-			return
-		}
-		var ok bool
-		userID, ok = session.Values["user_id"].(string)
-		if !ok || userID == "" {
-			http.Error(w, "User not logged in ", http.StatusUnauthorized)
-			return
-		}
+		http.Error(w, "User not logged in", http.StatusUnauthorized)
+		return
 	}
 	query := `
 	SELECT id,name,email,avatar_url

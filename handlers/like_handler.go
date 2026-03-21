@@ -2,17 +2,15 @@ package handlers
 
 import (
 	"devConnect/config"
+	"devConnect/middleware"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/markbates/goth/gothic"
 )
 
 func LikePost(w http.ResponseWriter, r *http.Request) {
-
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 
 	vars := mux.Vars(r)
 	postID := vars["postID"]
@@ -81,8 +79,7 @@ func GetLikes(w http.ResponseWriter, r *http.Request) {
 }
 
 func UnlikePost(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 	vars := mux.Vars(r)
 	postID := vars["postID"]
 	query := `

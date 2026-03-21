@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"devConnect/config"
+	"devConnect/middleware"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/markbates/goth/gothic"
 )
 
 type ProfileUpdate struct {
@@ -17,8 +17,7 @@ type ProfileUpdate struct {
 }
 
 func UpdateProfile(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 
 	var profile ProfileUpdate
 	err := json.NewDecoder(r.Body).Decode(&profile)

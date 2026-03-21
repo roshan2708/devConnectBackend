@@ -2,18 +2,16 @@ package handlers
 
 import (
 	"devConnect/config"
+	"devConnect/middleware"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/markbates/goth/gothic"
 )
 
 func FollowUser(w http.ResponseWriter, r *http.Request) {
-
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	currentUser := session.Values["user_id"].(string)
+	currentUser := middleware.GetUserID(r)
 
 	vars := mux.Vars(r)
 	targetUser := vars["userID"]
@@ -120,8 +118,7 @@ func GetFollowing(w http.ResponseWriter, r *http.Request) {
 }
 
 func UnfollowUser(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devocnnect-session")
-	currentUser := session.Values["user_id"].(string)
+	currentUser := middleware.GetUserID(r)
 	vars := mux.Vars(r)
 
 	targetUser := vars["userID"]

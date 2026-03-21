@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"devConnect/config"
+	"devConnect/middleware"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/markbates/goth/gothic"
 )
 
 type CommentRequest struct {
@@ -14,9 +14,7 @@ type CommentRequest struct {
 }
 
 func CreateComment(w http.ResponseWriter, r *http.Request) {
-
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 
 	vars := mux.Vars(r)
 	postID := vars["postID"]
@@ -92,8 +90,7 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteComment(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 
 	vars := mux.Vars(r)
 

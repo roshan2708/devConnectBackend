@@ -4,46 +4,11 @@ import (
 	"devConnect/handlers"
 	"devConnect/middleware"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
-	"github.com/markbates/goth/providers/google"
 )
 
 func SetupRoutes() *mux.Router {
-
-	secret := os.Getenv("SESSION_SECRET")
-
-	// Create session store
-	store := sessions.NewCookieStore([]byte(secret))
-
-	// Important for Safari + OAuth
-	store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   86400 * 30,
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	}
-
-	gothic.Store = store
-
-	// Tell goth how to extract provider from URL
-	gothic.GetProviderName = func(req *http.Request) (string, error) {
-		return mux.Vars(req)["provider"], nil
-	}
-
-	// Configure Google OAuth
-	goth.UseProviders(
-		google.New(
-			os.Getenv("GOOGLE_KEY"),
-			os.Getenv("GOOGLE_SECRET"),
-			"http://localhost:3000/auth/google/callback",
-		),
-	)
 
 	r := mux.NewRouter()
 	r.Use(middleware.RateLimiter)
@@ -51,9 +16,10 @@ func SetupRoutes() *mux.Router {
 	// Public routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
 
-	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
+	// Manual OAuth2 Routes
+	r.HandleFunc("/auth/google", handlers.GoogleLogin).Methods("GET")
+	r.HandleFunc("/auth/google/callback", handlers.GoogleCallback).Methods("GET")
 
-	r.HandleFunc("/auth/{provider}/callback", handlers.GoogleCallback).Methods("GET")
 	r.HandleFunc("/health", handlers.HealthCheck).Methods("GET")
 
 	// Protected routes

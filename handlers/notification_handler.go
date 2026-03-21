@@ -2,16 +2,15 @@ package handlers
 
 import (
 	"devConnect/config"
+	"devConnect/middleware"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/markbates/goth/gothic"
 )
 
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 	query := `
 	SELECT id,type,message,created_at,read
 	FROM notifications
@@ -43,8 +42,7 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(notifications)
 }
 func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 
 	vars := mux.Vars(r)
 	notificationID := vars["id"]

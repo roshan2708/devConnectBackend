@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"devConnect/config"
+	"devConnect/middleware"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/markbates/goth/gothic"
 )
 
 type CreatePostRequest struct {
@@ -16,8 +16,7 @@ type CreatePostRequest struct {
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 	var reqBody CreatePostRequest
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 
@@ -86,8 +85,7 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePost(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 	vars := mux.Vars(r)
 	postID := vars["postID"]
 	query := `
@@ -114,8 +112,7 @@ type UpdatePostRequest struct {
 }
 
 func EditPost(w http.ResponseWriter, r *http.Request) {
-	session, _ := gothic.Store.Get(r, "devconnect-session")
-	userID := session.Values["user_id"].(string)
+	userID := middleware.GetUserID(r)
 
 	vars := mux.Vars(r)
 	postID := vars["postID"]
