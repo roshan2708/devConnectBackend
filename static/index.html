@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>DevConnect Backend Tester</title>
+<meta name="description" content="Interactive tester for the DevConnect backend API.">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 
@@ -72,6 +73,29 @@ margin-top:10px;
 background:#0f0f0f;
 }
 
+.auth-status{
+font-size:13px;
+color:#888;
+margin-top:8px;
+}
+
+.auth-status span{
+color:#4ade80;
+font-weight:500;
+}
+
+.tag{
+display:inline-block;
+background:#1a1a1a;
+border:1px solid #2a2a2a;
+border-radius:4px;
+padding:2px 8px;
+font-size:12px;
+color:#aaa;
+margin-top:4px;
+word-break:break-all;
+}
+
 </style>
 </head>
 
@@ -83,9 +107,12 @@ background:#0f0f0f;
 
 <div class="panel">
 <h2>Auth</h2>
-<a href="/auth/google">
-<button>Login With Google</button>
-</a>
+<div id="authSection">
+  <a id="loginLink" href="#">
+    <button id="loginBtn">Login With Google</button>
+  </a>
+  <div class="auth-status" id="authStatus">Not logged in</div>
+</div>
 </div>
 
 <div class="panel">
@@ -156,8 +183,80 @@ background:#0f0f0f;
 
 <script>
 
+const BASE = "https://devconnectbackend-wuej.onrender.com";
+
+// ── Auth helpers ────────────────────────────────────────────────────────────
+
+function getToken() {
+  return sessionStorage.getItem("dc_token") || "";
+}
+
+function getHeaders() {
+  const t = getToken();
+  return t
+    ? { "Content-Type": "application/json", "Authorization": "Bearer " + t }
+    : { "Content-Type": "application/json" };
+}
+
+function updateAuthUI() {
+  const token = getToken();
+  const userId = sessionStorage.getItem("dc_userId") || "";
+  const name   = sessionStorage.getItem("dc_name")   || "";
+  const status = document.getElementById("authStatus");
+  const loginLink = document.getElementById("loginLink");
+  const loginBtn  = document.getElementById("loginBtn");
+
+  const redirectBack = encodeURIComponent(window.location.origin + window.location.pathname);
+  loginLink.href = "/auth/google?redirect_url=" + redirectBack;
+
+  if (token) {
+    loginBtn.textContent = "Logout";
+    loginBtn.onclick = function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem("dc_token");
+      sessionStorage.removeItem("dc_userId");
+      sessionStorage.removeItem("dc_name");
+      // Clean URL
+      history.replaceState({}, document.title, window.location.pathname);
+      updateAuthUI();
+    };
+    loginLink.removeAttribute("href");
+    const displayName = name || userId;
+    status.innerHTML = "Logged in as <span>" + displayName + "</span>";
+    if (userId) {
+      status.innerHTML += "<br><span class='tag'>userId: " + userId + "</span>";
+    }
+  } else {
+    loginBtn.textContent = "Login With Google";
+    loginBtn.onclick = null;
+    loginLink.href = "/auth/google?redirect_url=" + redirectBack;
+    status.innerHTML = "Not logged in";
+  }
+}
+
+// On page load — check for token/userId in URL params (from OAuth redirect)
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get("token");
+  const userId = params.get("userId");
+  const name   = params.get("name");
+  const success = params.get("success");
+
+  if (success === "true" && token) {
+    sessionStorage.setItem("dc_token",  token);
+    if (userId) sessionStorage.setItem("dc_userId", userId);
+    if (name)   sessionStorage.setItem("dc_name",   decodeURIComponent(name.replace(/\+/g, " ")));
+    // Remove query params from URL bar cleanly
+    history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  updateAuthUI();
+})();
+
+// ── API functions ─────────────────────────────────────────────────────────
+
 async function loadProfile(){
-const res=await fetch("/me")
+const res=await fetch(BASE+"/me",{headers:getHeaders()})
 const user=await res.json()
 document.getElementById("profileBox").innerHTML=`${user.name}<br>${user.email}`
 }
@@ -166,9 +265,9 @@ async function createPost(){
 
 const content=document.getElementById("postContent").value
 
-await fetch("/posts",{
+await fetch(BASE+"/posts",{
 method:"POST",
-headers:{"Content-Type":"application/json"},
+headers:getHeaders(),
 body:JSON.stringify({content})
 })
 
@@ -204,7 +303,7 @@ container.innerHTML+=`
 
 async function loadPosts(){
 
-const res=await fetch("/posts")
+const res=await fetch(BASE+"/posts",{headers:getHeaders()})
 const posts=await res.json()
 
 const box=document.getElementById("postsContainer")
@@ -216,7 +315,7 @@ posts.forEach(p=>renderPost(p,box))
 
 async function loadFeed(){
 
-const res=await fetch("/feed")
+const res=await fetch(BASE+"/feed",{headers:getHeaders()})
 const posts=await res.json()
 
 const box=document.getElementById("feedContainer")
@@ -228,7 +327,7 @@ posts.forEach(p=>renderPost(p,box))
 
 async function likePost(id){
 
-await fetch("/posts/"+id+"/like",{method:"POST"})
+await fetch(BASE+"/posts/"+id+"/like",{method:"POST",headers:getHeaders()})
 
 alert("liked")
 
@@ -245,9 +344,9 @@ async function saveEdit(id){
 
 const content=document.getElementById("edit-"+id).value
 
-await fetch("/posts/"+id,{
+await fetch(BASE+"/posts/"+id,{
 method:"PUT",
-headers:{"Content-Type":"application/json"},
+headers:getHeaders(),
 body:JSON.stringify({content})
 })
 
@@ -257,7 +356,7 @@ loadPosts()
 
 async function deletePost(id){
 
-await fetch("/posts/"+id,{method:"DELETE"})
+await fetch(BASE+"/posts/"+id,{method:"DELETE",headers:getHeaders()})
 
 loadPosts()
 
@@ -267,7 +366,7 @@ async function followUser(){
 
 const id=document.getElementById("followUserId").value
 
-await fetch("/follow/"+id,{method:"POST"})
+await fetch(BASE+"/follow/"+id,{method:"POST",headers:getHeaders()})
 
 alert("followed")
 
@@ -277,7 +376,7 @@ async function unfollowUser(){
 
 const id=document.getElementById("followUserId").value
 
-await fetch("/follow/"+id,{method:"DELETE"})
+await fetch(BASE+"/follow/"+id,{method:"DELETE",headers:getHeaders()})
 
 alert("unfollowed")
 
@@ -288,9 +387,9 @@ async function addComment(){
 const post=document.getElementById("commentPostId").value
 const content=document.getElementById("commentContent").value
 
-await fetch("/posts/"+post+"/comment",{
+await fetch(BASE+"/posts/"+post+"/comment",{
 method:"POST",
-headers:{"Content-Type":"application/json"},
+headers:getHeaders(),
 body:JSON.stringify({content})
 })
 
@@ -302,7 +401,7 @@ async function searchUsers(){
 
 const skill=document.getElementById("searchSkill").value
 
-const res=await fetch("/search?skill="+skill)
+const res=await fetch(BASE+"/search?skill="+skill,{headers:getHeaders()})
 const users=await res.json()
 
 const box=document.getElementById("searchResults")
@@ -318,7 +417,7 @@ async function getUserPosts(){
 
 const id=document.getElementById("userPostsId").value
 
-const res=await fetch("/users/"+id+"/posts")
+const res=await fetch(BASE+"/users/"+id+"/posts",{headers:getHeaders()})
 const posts=await res.json()
 
 const box=document.getElementById("userPostsBox")
@@ -332,7 +431,7 @@ box.innerHTML+=`<div class="post">${p.content}</div>`
 
 async function loadTrending(){
 
-const res=await fetch("/trending")
+const res=await fetch(BASE+"/trending",{headers:getHeaders()})
 const posts=await res.json()
 
 const box=document.getElementById("trendingBox")
@@ -346,7 +445,7 @@ box.innerHTML+=`<div class="post">${p.content}</div>`
 
 async function loadNotifications(){
 
-const res=await fetch("/notifications")
+const res=await fetch(BASE+"/notifications",{headers:getHeaders()})
 const data=await res.json()
 
 const box=document.getElementById("notificationsBox")

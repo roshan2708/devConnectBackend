@@ -10,15 +10,33 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/api/oauth2/v2"
+	"golang.org/x/oauth2"
+	goauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 )
 
+// buildOAuthConfig returns an oauth2.Config with the redirect URI
+// derived from the incoming request host — works for both local and Render.
+func buildOAuthConfig(r *http.Request) *oauth2.Config {
+	proto := r.Header.Get("X-Forwarded-Proto")
+	if proto == "" {
+		if r.TLS != nil {
+			proto = "https"
+		} else {
+			proto = "http"
+		}
+	}
+	redirectURL := fmt.Sprintf("%s://%s/auth/google/callback", proto, r.Host)
+	cfg := *config.GoogleOauthConfig // shallow copy
+	cfg.RedirectURL = redirectURL
+	return &cfg
+}
+
 func GoogleLogin(w http.ResponseWriter, r *http.Request) {
-	// We can use the state parameter to pass a redirect URL if needed
+	cfg := buildOAuthConfig(r)
 	state := r.URL.Query().Get("redirect_url")
-	url := config.GoogleOauthConfig.AuthCodeURL(state)
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	authURL := cfg.AuthCodeURL(state)
+	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
 }
 
 func GoogleCallback(res http.ResponseWriter, req *http.Request) {
@@ -30,14 +48,16 @@ func GoogleCallback(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token, err := config.GoogleOauthConfig.Exchange(context.Background(), code)
+	cfg := buildOAuthConfig(req)
+
+	token, err := cfg.Exchange(context.Background(), code)
 	if err != nil {
 		log.Println("Token Exchange Error:", err)
 		http.Redirect(res, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
-	oauth2Service, err := oauth2.NewService(context.Background(), option.WithTokenSource(config.GoogleOauthConfig.TokenSource(context.Background(), token)))
+	oauth2Service, err := goauth2.NewService(context.Background(), option.WithTokenSource(cfg.TokenSource(context.Background(), token)))
 	if err != nil {
 		log.Println("OAuth2 Service Error:", err)
 		http.Redirect(res, req, "/", http.StatusTemporaryRedirect)
@@ -80,7 +100,20 @@ func GoogleCallback(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Construct the target URL for the app
+	// ── Web redirect (HTML tester) ───────────────────────────────────────────
+	// If state is an HTTP/HTTPS URL the login came from a browser — redirect directly.
+	if strings.HasPrefix(state, "http://") || strings.HasPrefix(state, "https://") {
+		separator := "?"
+		if strings.Contains(state, "?") {
+			separator = "&"
+		}
+		webURL := fmt.Sprintf("%s%suserId=%s&name=%s&token=%s&success=true",
+			state, separator, userInfo.Id, userInfo.Name, jwtToken)
+		http.Redirect(res, req, webURL, http.StatusFound)
+		return
+	}
+
+	// ── Flutter / mobile deep-link redirect ──────────────────────────────────
 	var targetURL string
 	if state != "" && state != "state" {
 		separator := "?"
