@@ -179,6 +179,43 @@ word-break:break-all;
 <div id="notificationsBox"></div>
 </div>
 
+<div class="panel">
+<h2>Advanced: Link Platform</h2>
+<input id="platformName" placeholder="Platform (github/leetcode)">
+<input id="platformUsername" placeholder="Username">
+<button onclick="linkPlatform()">Link Account</button>
+</div>
+
+<div class="panel">
+<h2>Advanced: Developer Stats & XP</h2>
+<input id="statsUserId" placeholder="User ID">
+<button onclick="getUserStats()">Load Stats</button>
+<div id="statsBox"></div>
+</div>
+
+<div class="panel">
+<h2>Advanced: Developer DNA</h2>
+<button onclick="analyzeDNA()">Analyze My DNA (AI)</button>
+<input id="dnaUserId" placeholder="User ID" style="margin-top:10px;">
+<button onclick="getDNA()">Load DNA</button>
+<div id="dnaBox"></div>
+</div>
+
+<div class="panel">
+<h2>Advanced: Live Cross-Platform Feed</h2>
+<button onclick="loadLiveFeed()">Load Live Feed</button>
+<div id="liveFeedBox"></div>
+</div>
+
+<div class="panel">
+<h2>Advanced: Live Sessions (Build With Me)</h2>
+<input id="sessionTitle" placeholder="Session Title">
+<input id="sessionDesc" placeholder="Description">
+<button onclick="startSession()">Start Build Session</button>
+<button onclick="loadSessions()">Load Active Sessions</button>
+<div id="sessionsBox"></div>
+</div>
+
 </div>
 
 <script>
@@ -457,7 +494,81 @@ box.innerHTML+=`<div class="notification">${n.message}</div>`
 
 }
 
-</script>
+// --- Advanced API Helpers ---
 
-</body>
+async function linkPlatform(){
+const platform=document.getElementById("platformName").value
+const username=document.getElementById("platformUsername").value
+await fetch(BASE+"/integrations/"+platform+"/link",{
+method:"POST",
+headers:getHeaders(),
+body:JSON.stringify({username})
+})
+alert("Platform linked successfully")
+}
+
+async function getUserStats(){
+const id=document.getElementById("statsUserId").value
+const res=await fetch(BASE+"/users/"+id+"/stats",{headers:getHeaders()})
+if(!res.ok){ document.getElementById("statsBox").innerHTML="Error fetching stats"; return; }
+const stats=await res.json()
+document.getElementById("statsBox").innerHTML=`<pre style="font-size:12px;color:#aaa">${JSON.stringify(stats, null, 2)}</pre>`
+}
+
+async function analyzeDNA(){
+const res=await fetch(BASE+"/users/me/analyze-dna",{method:"POST",headers:getHeaders()})
+if(!res.ok){ alert(await res.text()); return; }
+const dna=await res.json()
+document.getElementById("dnaBox").innerHTML=`<b>Analyzed Successfully!</b><br><pre style="font-size:12px;color:#aaa">${JSON.stringify(dna, null, 2)}</pre>`
+}
+
+async function getDNA(){
+const id=document.getElementById("dnaUserId").value
+const res=await fetch(BASE+"/users/"+id+"/dna",{headers:getHeaders()})
+if(!res.ok){ document.getElementById("dnaBox").innerHTML="DNA not found"; return; }
+const dna=await res.json()
+document.getElementById("dnaBox").innerHTML=`<pre style="font-size:12px;color:#aaa">${JSON.stringify(dna, null, 2)}</pre>`
+}
+
+async function loadLiveFeed(){
+const res=await fetch(BASE+"/feed/live",{headers:getHeaders()})
+const feed=await res.json()
+const box=document.getElementById("liveFeedBox")
+box.innerHTML=""
+if(feed && feed.length > 0){
+  feed.forEach(f=>{
+    box.innerHTML+=`<div class="notification"><b>${f.activity_type}</b> - User: ${f.user_id} <br><small>${f.created_at}</small></div>`
+  })
+} else {
+  box.innerHTML = "<div class='auth-status'>No recent cross-platform activity</div>"
+}
+}
+
+async function startSession(){
+const title=document.getElementById("sessionTitle").value
+const desc=document.getElementById("sessionDesc").value
+await fetch(BASE+"/sessions",{
+method:"POST",
+headers:getHeaders(),
+body:JSON.stringify({title: title, description: desc, stream_url: "https://twitch.tv/devstream"})
+})
+alert("Live session started!")
+loadSessions()
+}
+
+async function loadSessions(){
+const res=await fetch(BASE+"/sessions/live",{headers:getHeaders()})
+const sessions=await res.json()
+const box=document.getElementById("sessionsBox")
+box.innerHTML=""
+if(sessions && sessions.length > 0){
+  sessions.forEach(s=>{
+    box.innerHTML+=`<div class="post"><b>${s.title}</b> (Host: ${s.host_id})<br>${s.description}<br><a href="${s.stream_url}" target="_blank" style="color:#4ade80; font-size:13px; text-decoration:none;">View Stream</a></div>`
+  })
+} else {
+  box.innerHTML = "<div class='auth-status'>No active sessions right now</div>"
+}
+}
+
+</script></body>
 </html>

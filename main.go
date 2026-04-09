@@ -9,6 +9,7 @@ import (
 	"devConnect/config"
 	"devConnect/middleware"
 	"devConnect/routes"
+	"devConnect/workers"
 )
 
 func main() {
@@ -21,6 +22,9 @@ func main() {
 
 	// Connect DB
 	config.ConnectDB()
+
+	// Start Background Workers
+	workers.StartSyncWorker()
 
 	// Setup router
 	r := routes.SetupRoutes()
