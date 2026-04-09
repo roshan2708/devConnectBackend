@@ -220,7 +220,9 @@ word-break:break-all;
 
 <script>
 
-const BASE = "https://devconnectbackend-wuej.onrender.com";
+const BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+    ? "http://localhost:3000" 
+    : "https://devconnectbackend-wuej.onrender.com";
 
 // ── Auth helpers ────────────────────────────────────────────────────────────
 
