@@ -109,6 +109,41 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/search", handlers.SearchUsers).Methods("GET")
 	r.HandleFunc("/trending", handlers.GetTrendingPosts).Methods("GET")
 
+
+	// --- Advanced Architecture Extensions ---
+
+	// 1. Platform Links & Gamification
+	r.Handle("/integrations/{platform}/link",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.LinkPlatform),
+		)).Methods("POST")
+
+	r.HandleFunc("/users/{userID}/stats", handlers.GetUserStats).Methods("GET")
+
+	// 2. DNA & AI
+	r.Handle("/users/me/analyze-dna",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.AnalyzeDNA),
+		)).Methods("POST")
+
+	r.HandleFunc("/users/{userID}/dna", handlers.GetDNA).Methods("GET")
+
+	// 3. New Advanced Feed & Extended Posts
+	r.Handle("/feed/live",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.GetAdvancedFeed),
+		)).Methods("GET")
+
+	r.HandleFunc("/posts/advanced", handlers.GetExtendedPosts).Methods("GET")
+
+	// 4. Live Sessions (Build With Me)
+	r.Handle("/sessions",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.StartLiveSession),
+		)).Methods("POST")
+
+	r.HandleFunc("/sessions/live", handlers.GetLiveSessions).Methods("GET")
+
 	return r
 
 }
