@@ -4,6 +4,7 @@ import (
 	"devConnect/config"
 	"devConnect/middleware"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -51,13 +52,30 @@ func LikePost(w http.ResponseWriter, r *http.Request) {
 func GetLikes(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	postID := vars["postID"]
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+
+	page := 1
+	limit := 10
+
+	if pageStr != "" {
+		fmt.Sscanf(pageStr, "%d", &page)
+	}
+
+	if limitStr != "" {
+		fmt.Sscanf(limitStr, "%d", &limit)
+	}
+
+	offset := (page - 1) * limit
+
 	query := `
 	SELECT user_id
 	FROM likes
 	WHERE post_id=$1
+	LIMIT $2 OFFSET $3
 	`
 
-	rows, err := config.DB.Query(query, postID)
+	rows, err := config.DB.Query(query, postID, limit, offset)
 
 	if err != nil {
 		http.Error(w, "Failed to fetch likes", http.StatusInternalServerError)
