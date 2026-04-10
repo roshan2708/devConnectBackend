@@ -28,7 +28,7 @@ func SyncPlatforms() {
 		log.Println("[Sync Worker] Error querying platform links:", err)
 		return
 	}
-	defer rows.Close()
+	defer rows.Close()qwertyui
 
 	for rows.Next() {
 		var userID, platform, username string
