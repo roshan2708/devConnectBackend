@@ -53,9 +53,10 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 
 	offset := (page - 1) * limit
 	query := `
-	SELECT id,user_id,content,created_at
-	FROM posts
-	ORDER BY created_at DESC
+	SELECT p.id,p.user_id,p.content,p.created_at,COALESCE(u.name, ''),COALESCE(u.avatar_url, '')
+	FROM posts p
+	LEFT JOIN users u ON p.user_id = u.id
+	ORDER BY p.created_at DESC
 	LIMIT $1 OFFSET $2
 	`
 
@@ -71,12 +72,17 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 		var userID string
 		var content string
 		var createdAt string
-		rows.Scan(&id, &userID, &content, &createdAt)
+		var userName, avatarURL string
+		rows.Scan(&id, &userID, &content, &createdAt, &userName, &avatarURL)
 		post := map[string]interface{}{
 			"id":         id,
 			"user_id":    userID,
 			"content":    content,
 			"created_at": createdAt,
+			"user": map[string]interface{}{
+				"name":       userName,
+				"avatar_url": avatarURL,
+			},
 		}
 		posts = append(posts, post)
 	}
@@ -148,10 +154,11 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 	userID := vars["userID"]
 
 	query := `
-	SELECT id, user_id, content, created_at
-	FROM posts
-	WHERE user_id=$1
-	ORDER BY created_at DESC
+	SELECT p.id, p.user_id, p.content, p.created_at, COALESCE(u.name, ''), COALESCE(u.avatar_url, '')
+	FROM posts p
+	LEFT JOIN users u ON p.user_id = u.id
+	WHERE p.user_id=$1
+	ORDER BY p.created_at DESC
 	`
 
 	rows, err := config.DB.Query(query, userID)
@@ -163,11 +170,17 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
+	type User struct {
+		Name      string `json:"name"`
+		AvatarURL string `json:"avatar_url"`
+	}
+
 	type Post struct {
 		ID        int    `json:"id"`
 		UserID    string `json:"user_id"`
 		Content   string `json:"content"`
 		CreatedAt string `json:"created_at"`
+		User      User   `json:"user"`
 	}
 
 	var posts []Post
@@ -176,7 +189,7 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 
 		var p Post
 
-		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt)
+		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt, &p.User.Name, &p.User.AvatarURL)
 
 		posts = append(posts, p)
 	}
@@ -191,11 +204,14 @@ func GetTrendingPosts(w http.ResponseWriter, r *http.Request) {
 	posts.user_id,
 	posts.content,
 	posts.created_at,
+	COALESCE(users.name, ''),
+	COALESCE(users.avatar_url, ''),
 	COUNT(DISTINCT likes.id)*2 + COUNT(DISTINCT comments.id)*3 AS score
 	FROM posts
+	LEFT JOIN users ON posts.user_id = users.id
 	LEFT JOIN likes ON posts.id = likes.post_id
 	LEFT JOIN comments ON posts.id = comments.post_id
-	GROUP BY posts.id
+	GROUP BY posts.id, users.name, users.avatar_url
 	ORDER BY score DESC
 	LIMIT 10
 	`
@@ -207,11 +223,18 @@ func GetTrendingPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rows.Close()
+	
+	type User struct {
+		Name      string `json:"name"`
+		AvatarURL string `json:"avatar_url"`
+	}
+
 	type Post struct {
 		ID        int    `json:"id"`
 		UserID    string `json:"user_id"`
 		Content   string `json:"content"`
 		CreatedAt string `json:"created_at"`
+		User      User   `json:"user"`
 		Score     int    `json:"score"`
 	}
 
@@ -221,7 +244,7 @@ func GetTrendingPosts(w http.ResponseWriter, r *http.Request) {
 
 		var p Post
 
-		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt, &p.Score)
+		rows.Scan(&p.ID, &p.UserID, &p.Content, &p.CreatedAt, &p.User.Name, &p.User.AvatarURL, &p.Score)
 
 		posts = append(posts, p)
 	}
