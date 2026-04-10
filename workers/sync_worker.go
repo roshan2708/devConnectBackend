@@ -21,14 +21,14 @@ func StartSyncWorker() {
 
 func SyncPlatforms() {
 	log.Println("[Sync Worker] Running platform sync iteration...")
-	
+
 	query := `SELECT user_id, platform, username FROM platform_links`
 	rows, err := config.DB.Query(query)
 	if err != nil {
 		log.Println("[Sync Worker] Error querying platform links:", err)
 		return
 	}
-	defer rows.Close()qwertyui
+	defer rows.Close()
 
 	for rows.Next() {
 		var userID, platform, username string
@@ -48,14 +48,14 @@ func SyncPlatforms() {
 func syncGithub(userID, username string) {
 	// Mock: We fetch GitHub API here and update stats
 	// Example: GET https://api.github.com/users/{username}
-	
+
 	// Increment commits randomly for demonstration
 	updateQuery := `
 		UPDATE developer_stats 
 		SET github_commits = github_commits + 5, 
 		    total_xp = total_xp + 50
 		WHERE user_id = $1`
-		
+
 	_, err := config.DB.Exec(updateQuery, userID)
 	if err != nil {
 		log.Printf("[Sync Worker] Failed updating Github stats for %s: %v\n", userID, err)
@@ -64,13 +64,13 @@ func syncGithub(userID, username string) {
 
 func syncLeetcode(userID, username string) {
 	// Mock: We fetch LeetCode GraphQL API here
-	
+
 	updateQuery := `
 		UPDATE developer_stats 
 		SET leetcode_solved = leetcode_solved + 2, 
 		    total_xp = total_xp + 20
 		WHERE user_id = $1`
-		
+
 	_, err := config.DB.Exec(updateQuery, userID)
 	if err != nil {
 		log.Printf("[Sync Worker] Failed updating Leetcode stats for %s: %v\n", userID, err)
