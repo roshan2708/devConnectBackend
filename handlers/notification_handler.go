@@ -4,6 +4,7 @@ import (
 	"devConnect/config"
 	"devConnect/middleware"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -11,14 +12,31 @@ import (
 
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+
+	page := 1
+	limit := 10
+
+	if pageStr != "" {
+		fmt.Sscanf(pageStr, "%d", &page)
+	}
+
+	if limitStr != "" {
+		fmt.Sscanf(limitStr, "%d", &limit)
+	}
+
+	offset := (page - 1) * limit
+
 	query := `
 	SELECT id,type,message,created_at,read
 	FROM notifications
 	WHERE user_id=$1
 	ORDER BY created_at DESC
+	LIMIT $2 OFFSET $3
 	`
 
-	rows, err := config.DB.Query(query, userID)
+	rows, err := config.DB.Query(query, userID, limit, offset)
 	if err != nil {
 		http.Error(w, "Unable to laod notifications", http.StatusInternalServerError)
 		return
