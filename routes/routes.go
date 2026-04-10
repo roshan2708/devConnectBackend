@@ -108,6 +108,11 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/users/{userID}/posts", handlers.GetUserPosts).Methods("GET")
 	r.HandleFunc("/search", handlers.SearchUsers).Methods("GET")
 	r.HandleFunc("/trending", handlers.GetTrendingPosts).Methods("GET")
+	r.HandleFunc("/leaderboard/global", handlers.GetGlobalLeaderboard).Methods("GET")
+	r.Handle("/leaderboard/network",
+		middleware.AuthMiddleware(
+			http.HandlerFunc(handlers.GetNetworkLeaderboard),
+		)).Methods("GET")
 
 
 	// --- Advanced Architecture Extensions ---
