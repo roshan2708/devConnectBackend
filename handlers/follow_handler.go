@@ -48,71 +48,77 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetFollowers(w http.ResponseWriter, r *http.Request) {
-
 	vars := mux.Vars(r)
-	userID := vars["userID"] // FIXED
+	userID := vars["userID"]
 
 	query := `
-	SELECT follower_id
-	FROM follows
-	WHERE following_id=$1
+	SELECT u.id, COALESCE(u.name,''), COALESCE(u.avatar_url,''), COALESCE(u.location,''), COALESCE(u.bio,'')
+	FROM follows f
+	JOIN users u ON u.id = f.follower_id
+	WHERE f.following_id=$1
 	`
 
 	rows, err := config.DB.Query(query, userID)
-
 	if err != nil {
 		http.Error(w, "Unable to get followers", http.StatusInternalServerError)
 		return
 	}
-
 	defer rows.Close()
 
-	var followers []string
-
-	for rows.Next() {
-
-		var follower string
-
-		rows.Scan(&follower)
-
-		followers = append(followers, follower)
+	type UserInfo struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		AvatarURL string `json:"avatar_url"`
+		Location  string `json:"location"`
+		Bio       string `json:"bio"`
 	}
-
+	var followers []UserInfo
+	for rows.Next() {
+		var u UserInfo
+		rows.Scan(&u.ID, &u.Name, &u.AvatarURL, &u.Location, &u.Bio)
+		followers = append(followers, u)
+	}
+	if followers == nil {
+		followers = []UserInfo{}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(followers)
 }
 
 func GetFollowing(w http.ResponseWriter, r *http.Request) {
-
 	vars := mux.Vars(r)
-	userID := vars["userID"] // FIXED
+	userID := vars["userID"]
 
 	query := `
-	SELECT following_id
-	FROM follows
-	WHERE follower_id=$1
+	SELECT u.id, COALESCE(u.name,''), COALESCE(u.avatar_url,''), COALESCE(u.location,''), COALESCE(u.bio,'')
+	FROM follows f
+	JOIN users u ON u.id = f.following_id
+	WHERE f.follower_id=$1
 	`
 
 	rows, err := config.DB.Query(query, userID)
-
 	if err != nil {
 		http.Error(w, "Failed to fetch following", http.StatusInternalServerError)
 		return
 	}
-
 	defer rows.Close()
 
-	var following []string
-
-	for rows.Next() {
-
-		var user string
-
-		rows.Scan(&user)
-
-		following = append(following, user)
+	type UserInfo struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		AvatarURL string `json:"avatar_url"`
+		Location  string `json:"location"`
+		Bio       string `json:"bio"`
 	}
-
+	var following []UserInfo
+	for rows.Next() {
+		var u UserInfo
+		rows.Scan(&u.ID, &u.Name, &u.AvatarURL, &u.Location, &u.Bio)
+		following = append(following, u)
+	}
+	if following == nil {
+		following = []UserInfo{}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(following)
 }
